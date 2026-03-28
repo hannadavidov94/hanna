@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מבחן יום העצמאות – כיתה ב'</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&family=Rubik:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --blue: #0038b8;
+    --light-blue: #4a90d9;
+    --sky: #dceeff;
+    --white: #ffffff;
+    --gold: #f5c518;
+    --correct: #2e7d32;
+    --wrong: #c62828;
+    --gray: #555;
+    --shadow: 0 8px 32px rgba(0,56,184,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: linear-gradient(135deg, #dceeff 0%, #f0f8ff 40%, #fffde7 100%);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 10px 60px;
+  }
+  .header { text-align: center; margin-bottom: 28px; animation: fadeDown 0.7s ease; }
+  .header h1 { font-family: 'Rubik', sans-serif; font-size: clamp(26px,5vw,42px); font-weight: 900; color: var(--blue); }
+  .header h1 span { color: var(--gold); }
+  .header .subtitle { font-size: 16px; color: var(--gray); margin-top: 6px; font-weight: 600; }
+  .flag-stripe { height: 12px; width: 300px; border-radius: 4px; background: var(--blue); margin: 8px auto; }
+
+  .card {
+    background: white; border-radius: 24px; box-shadow: var(--shadow);
+    padding: 32px 28px; width: 100%; max-width: 680px;
+    animation: fadeUp 0.6s ease; border-top: 6px solid var(--blue);
+  }
+  .emoji-row { font-size: 40px; text-align: center; margin-bottom: 20px; letter-spacing: 8px; }
+  h2 { font-family: 'Rubik', sans-serif; font-size: 24px; font-weight: 800; color: var(--blue); text-align: center; margin-bottom: 8px; }
+  .intro-p { color: var(--gray); text-align: center; font-size: 15px; margin-bottom: 28px; }
+
+  .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .input-group label { font-weight: 700; color: var(--blue); font-size: 16px; }
+  .input-group input {
+    border: 2.5px solid #c5d8f5; border-radius: 12px; padding: 14px 18px;
+    font-size: 18px; font-family: 'Heebo', sans-serif; outline: none; transition: border 0.2s;
+    text-align: right; background: #f8fbff;
+  }
+  .input-group input:focus { border-color: var(--blue); background: white; }
+
+  .btn {
+    width: 100%; padding: 16px; border-radius: 14px; border: none;
+    font-size: 18px; font-family: 'Rubik', sans-serif; font-weight: 800;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 10px;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--blue), var(--light-blue)); color: white; box-shadow: 0 4px 16px rgba(0,56,184,0.3); }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); }
+  .btn-primary:disabled { background: #bbb; cursor: not-allowed; }
+  .btn-green { background: linear-gradient(135deg, #2e7d32, #43a047); color: white; box-shadow: 0 4px 16px rgba(46,125,50,0.3); }
+  .btn-green:hover { transform: translateY(-2px); }
+  .btn-blue { background: linear-gradient(135deg, #1565c0, #1976d2); color: white; box-shadow: 0 4px 16px rgba(21,101,192,0.3); }
+  .btn-blue:hover { transform: translateY(-2px); }
+  .btn-gray { background: #f0f0f0; color: #333; border: 2px solid #ccc; }
+  .btn-gray:hover { background: #e0e0e0; }
+
+  .progress-container { margin-bottom: 20px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 8px; }
+  .progress-bar { height: 10px; background: #e0eaff; border-radius: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--light-blue)); border-radius: 10px; transition: width 0.4s ease; }
+
+  .question-badge { display: inline-block; background: var(--sky); color: var(--blue); font-weight: 800; font-size: 13px; padding: 4px 12px; border-radius: 20px; margin-bottom: 12px; }
+  .question-text { font-size: clamp(17px,3vw,21px); font-weight: 700; color: #1a1a2e; line-height: 1.5; margin-bottom: 22px; }
+
+  .options-grid { display: flex; flex-direction: column; gap: 12px; }
+  .option-btn {
+    background: #f4f8ff; border: 2.5px solid #d0e2ff; border-radius: 14px;
+    padding: 14px 18px; font-size: 17px; font-family: 'Heebo', sans-serif; font-weight: 600;
+    color: #1a1a2e; cursor: pointer; text-align: right; transition: all 0.18s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .option-btn:hover:not(:disabled) { background: var(--sky); border-color: var(--blue); transform: translateX(-3px); }
+  .option-btn.correct { background: #e8f5e9; border-color: var(--correct); color: var(--correct); }
+  .option-btn.wrong { background: #ffebee; border-color: var(--wrong); color: var(--wrong); }
+  .option-btn:disabled { cursor: default; }
+  .option-letter {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%; background: var(--blue);
+    color: white; font-size: 14px; font-weight: 800; flex-shrink: 0;
+  }
+  .option-btn.correct .option-letter { background: var(--correct); }
+  .option-btn.wrong .option-letter { background: var(--wrong); }
+
+  .feedback-box { margin-top: 16px; padding: 14px 18px; border-radius: 12px; font-size: 16px; font-weight: 700; display: none; }
+  .feedback-box.correct { background: #e8f5e9; color: var(--correct); border: 2px solid var(--correct); }
+  .feedback-box.wrong { background: #ffebee; color: var(--wrong); border: 2px solid var(--wrong); }
+
+  .nav-row { display: flex; justify-content: flex-end; margin-top: 22px; }
+  .btn-next {
+    background: linear-gradient(135deg, var(--blue), var(--light-blue)); color: white;
+    border: none; padding: 13px 28px; border-radius: 12px; font-size: 17px;
+    font-family: 'Rubik', sans-serif; font-weight: 800; cursor: pointer; display: none;
+    transition: all 0.2s; box-shadow: 0 4px 14px rgba(0,56,184,0.3);
+  }
+  .btn-next:hover { transform: translateY(-2px); }
+
+  #resultScreen { text-align: center; }
+  .result-emoji { font-size: 64px; margin-bottom: 16px; animation: bounce 1s ease; }
+  .result-title { font-family: 'Rubik', sans-serif; font-size: 26px; font-weight: 900; color: var(--blue); margin-bottom: 8px; }
+  .result-name { font-size: 20px; font-weight: 700; color: var(--gray); margin-bottom: 24px; }
+  .score-circle {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--light-blue));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 24px; box-shadow: 0 8px 30px rgba(0,56,184,0.35);
+    animation: pop 0.5s ease 0.3s both;
+  }
+  .score-num { font-family: 'Rubik', sans-serif; font-size: 44px; font-weight: 900; color: white; line-height: 1; }
+  .score-label { font-size: 14px; color: rgba(255,255,255,0.85); font-weight: 600; }
+  .score-bar-wrap { background: #e0eaff; border-radius: 20px; height: 20px; overflow: hidden; margin-bottom: 10px; }
+  .score-bar-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, var(--blue), var(--light-blue)); transition: width 1s ease 0.5s; }
+  .message-box { padding: 16px 20px; border-radius: 14px; font-size: 18px; font-weight: 700; margin-bottom: 24px; }
+
+  .answers-summary { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px; text-align: right; }
+  .answers-summary th { background: var(--blue); color: white; padding: 10px 12px; font-weight: 700; }
+  .answers-summary td { padding: 9px 12px; border-bottom: 1px solid #e0e9ff; }
+  .answers-summary tr:nth-child(even) td { background: #f4f8ff; }
+  .answers-summary .c { color: var(--correct); }
+  .answers-summary .w { color: var(--wrong); }
+
+  /* CSV fallback modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 1000;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white; border-radius: 20px; padding: 28px;
+    max-width: 600px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal h3 { color: var(--blue); font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+  .modal p { color: var(--gray); font-size: 14px; margin-bottom: 14px; line-height: 1.6; }
+  .modal textarea {
+    width: 100%; height: 200px; border: 2px solid #d0e2ff; border-radius: 10px;
+    padding: 12px; font-family: 'Courier New', monospace; font-size: 12px;
+    resize: vertical; direction: ltr; text-align: left; margin-bottom: 14px;
+  }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-family: 'Rubik', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+  .copy-btn { background: var(--blue); color: white; }
+  .copy-btn:hover { background: var(--light-blue); }
+  .close-btn { background: #f0f0f0; color: #333; }
+  .close-btn:hover { background: #e0e0e0; }
+  .copy-success { color: var(--correct); font-size: 14px; font-weight: 700; margin-top: 8px; display: none; }
+
+  .instructions-box {
+    background: #fff7d1; border: 2px solid var(--gold); border-radius: 14px;
+    padding: 16px; margin-bottom: 20px; font-size: 14px; color: #555; line-height: 1.8;
+    text-align: right;
+  }
+  .instructions-box strong { color: #b8860b; }
+
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:none; } }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+  @keyframes pop { 0% { transform:scale(0.7); opacity:0; } 80% { transform:scale(1.06); } 100% { transform:scale(1); opacity:1; } }
+  @keyframes bounce { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-18px); } 70% { transform:translateY(-8px); } }
+  .hidden { display: none !important; }
+  footer { margin-top: 30px; font-size: 13px; color: #aaa; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="flag-stripe"></div>
+  <h1>🇮🇱 מבחן <span>יום העצמאות</span></h1>
+  <p class="subtitle">כיתה ב' | 10 שאלות אמריקאיות</p>
+  <div class="flag-stripe"></div>
+</div>
+
+<!-- NAME SCREEN -->
+<div class="card" id="nameScreen">
+  <div class="emoji-row">🎉🇮🇱✡️🕊️🎉</div>
+  <h2>ברוכים הבאים למבחן!</h2>
+  <p class="intro-p">ענו על 10 שאלות על יום העצמאות של מדינת ישראל</p>
+  <div class="input-group">
+    <label for="studentName">👤 שם התלמיד/ה:</label>
+    <input type="text" id="studentName" placeholder="הכניסו שם פה..." autocomplete="off" />
+  </div>
+  <button class="btn btn-primary" id="startBtn" onclick="startQuiz()" disabled>🚀 התחילו את המבחן!</button>
+</div>
+
+<!-- QUIZ SCREEN -->
+<div class="card hidden" id="quizScreen">
+  <div class="progress-container">
+    <div class="progress-label">
+      <span id="progressText">שאלה 1 מתוך 10</span>
+      <span id="scoreCounter">✅ 0 נכון</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+  <div class="question-badge" id="questionBadge">שאלה 1</div>
+  <div class="question-text" id="questionText"></div>
+  <div class="options-grid" id="optionsGrid"></div>
+  <div class="feedback-box" id="feedbackBox"></div>
+  <div class="nav-row">
+    <button class="btn-next" id="nextBtn" onclick="nextQuestion()">הבא ←</button>
+  </div>
+</div>
+
+<!-- RESULT SCREEN -->
+<div class="card hidden" id="resultScreen">
+  <div class="result-emoji" id="resultEmoji">🎉</div>
+  <div class="result-title" id="resultTitle">כל הכבוד!</div>
+  <div class="result-name" id="resultName"></div>
+  <div class="score-circle">
+    <div class="score-num" id="scoreNum">0</div>
+    <div class="score-label">מתוך 10</div>
+  </div>
+  <div class="score-bar-wrap"><div class="score-bar-fill" id="scoreBarFill" style="width:0%"></div></div>
+  <div class="message-box" id="messageBox"></div>
+
+  <table class="answers-summary">
+    <thead><tr><th>#</th><th>שאלה</th><th>תשובתך</th><th>✓/✗</th></tr></thead>
+    <tbody id="answerTableBody"></tbody>
+  </table>
+
+  <button class="btn btn-green" onclick="tryExcel()">📊 שמור תוצאות לאקסל</button>
+  <button class="btn btn-gray" onclick="showCsvModal()">📋 העתק נתונים (גיבוי)</button>
+  <button class="btn btn-blue" onclick="restartQuiz()">🔄 מבחן חדש</button>
+</div>
+
+<!-- CSV MODAL -->
+<div class="modal-overlay" id="csvModal">
+  <div class="modal">
+    <h3>📋 העתקת נתונים לאקסל</h3>
+    <div class="instructions-box">
+      <strong>הוראות פשוטות:</strong><br>
+      1️⃣ לחצו על <strong>"העתק הכל"</strong><br>
+      2️⃣ פתחו <strong>Excel / Google Sheets</strong><br>
+      3️⃣ לחצו על תא A1 ← <strong>Ctrl+V</strong> (הדבק)<br>
+      4️⃣ בחרו "הפרד לפי פסיק" אם Excel שואל
+    </div>
+    <p>הנתונים בפורמט CSV מוכנים להדבקה:</p>
+    <textarea id="csvContent" readonly></textarea>
+    <div class="modal-btns">
+      <button class="copy-btn" onclick="copyCSV()">📋 העתק הכל</button>
+      <button class="close-btn" onclick="closeModal()">סגור</button>
+    </div>
+    <div class="copy-success" id="copySuccess">✅ הועתק בהצלחה! כעת הדבק ב-Excel</div>
+  </div>
+</div>
+
+<footer>🇮🇱 חג עצמאות שמח! | כיתה ב' | מבחן אינטראקטיבי</footer>
+
+<script>
+const QUESTIONS = [
+  { q: "באיזה תאריך בלוח העברי חל יום העצמאות של ישראל?", opts: ["א' בניסן","ה' באייר","כ״ט בנובמבר","ט״ו בשבט"], ans: 1 },
+  { q: "מי קרא את הכרזת העצמאות של מדינת ישראל?", opts: ["יצחק רבין","מנחם בגין","דוד בן-גוריון","חיים וייצמן"], ans: 2 },
+  { q: "באיזו שנה הוקמה מדינת ישראל?", opts: ["1945","1947","1948","1950"], ans: 2 },
+  { q: "מהי עיר הבירה של מדינת ישראל?", opts: ["תל אביב","חיפה","באר שבע","ירושלים"], ans: 3 },
+  { q: "מה הסמל שמופיע במרכז דגל ישראל?", opts: ["מגן דוד","מנורה","כוכב","עץ זית"], ans: 0 },
+  { q: "כמה כוכבים יש על דגל ישראל?", opts: ["אחד","שניים","שלושה","אפס – אין כוכבים"], ans: 3 },
+  { q: "מה שמו של ההמנון הלאומי של ישראל?", opts: ["ירושלים של זהב","התקווה","שיר לשלום","אם אשכחך"], ans: 1 },
+  { q: "איזה ים שוטף את החוף המערבי של ישראל?", opts: ["ים סוף","ים המלח","הים התיכון","ים כינרת"], ans: 2 },
+  { q: "לפני יום העצמאות נזכרים ב___", opts: ["יום הזיכרון לשואה","יום הילד","יום הזיכרון לחללי מערכות ישראל","יום ירושלים"], ans: 2 },
+  { q: "מה היה שמה של ארץ ישראל לפני הקמת המדינה בתקופת השלטון הבריטי?", opts: ['ממלכת ישראל','פלשתינה (א"י) תחת המנדט הבריטי','הרפובליקה העברית','ארם דמשק'], ans: 1 }
+];
+
+const LETTERS = ['א','ב','ג','ד'];
+let currentQ = 0, score = 0, userAnswers = [], studentName = '';
+
+document.getElementById('studentName').addEventListener('input', function() {
+  document.getElementById('startBtn').disabled = this.value.trim().length < 2;
+});
+document.getElementById('studentName').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && this.value.trim().length >= 2) startQuiz();
+});
+
+function startQuiz() {
+  studentName = document.getElementById('studentName').value.trim();
+  if (!studentName) return;
+  document.getElementById('nameScreen').classList.add('hidden');
+  document.getElementById('quizScreen').classList.remove('hidden');
+  currentQ = 0; score = 0; userAnswers = [];
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentQ];
+  document.getElementById('questionBadge').textContent = `שאלה ${currentQ + 1}`;
+  document.getElementById('questionText').textContent = q.q;
+  document.getElementById('progressText').textContent = `שאלה ${currentQ + 1} מתוך ${QUESTIONS.length}`;
+  document.getElementById('scoreCounter').textContent = `✅ ${score} נכון`;
+  document.getElementById('progressFill').style.width = `${(currentQ / QUESTIONS.length) * 100}%`;
+  const grid = document.getElementById('optionsGrid');
+  grid.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${LETTERS[i]}</span>${opt}`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+  document.getElementById('feedbackBox').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'none';
+}
+
+function selectAnswer(chosen) {
+  const q = QUESTIONS[currentQ];
+  const buttons = document.querySelectorAll('.option-btn');
+  buttons.forEach(b => b.disabled = true);
+  const isCorrect = chosen === q.ans;
+  if (isCorrect) score++;
+  userAnswers.push({ question: q.q, chosen: q.opts[chosen], correct: q.opts[q.ans], isCorrect });
+  buttons[chosen].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) buttons[q.ans].classList.add('correct');
+  const fb = document.getElementById('feedbackBox');
+  fb.className = 'feedback-box ' + (isCorrect ? 'correct' : 'wrong');
+  fb.textContent = isCorrect ? '✅ כל הכבוד! תשובה נכונה! 🎉' : `❌ לא נכון. התשובה הנכונה: ${q.opts[q.ans]}`;
+  fb.style.display = 'block';
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.style.display = 'block';
+  nextBtn.textContent = currentQ < QUESTIONS.length - 1 ? 'הבא ←' : 'סיים מבחן ✓';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ < QUESTIONS.length) renderQuestion();
+  else showResults();
+}
+
+function showResults() {
+  document.getElementById('quizScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('hidden');
+  const pct = (score / QUESTIONS.length) * 100;
+  document.getElementById('resultName').textContent = studentName;
+  document.getElementById('scoreNum').textContent = score;
+  let emoji, title, msg, msgBg;
+  if (pct === 100)      { emoji='🏆'; title='מושלם לחלוטין!'; msg='🌟 ענקי! ידעת את כל התשובות!'; msgBg='#e8f5e9'; }
+  else if (pct >= 80)   { emoji='🎉'; title='כל הכבוד!'; msg='😊 עבודה נפלאה! ידע מרשים!'; msgBg='#e8f5e9'; }
+  else if (pct >= 60)   { emoji='👍'; title='טוב מאוד!'; msg='📖 בסדר גמור! כדאי לחזור עוד קצת.'; msgBg='#fff7d1'; }
+  else                   { emoji='💪'; title='נסו שוב!'; msg='📚 קראו עוד ונסו מחדש!'; msgBg='#ffebee'; }
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  const mb = document.getElementById('messageBox');
+  mb.textContent = msg; mb.style.background = msgBg; mb.style.border = `2px solid ${pct>=60?'#a5d6a7':'#ffcdd2'}`; mb.style.color='#333';
+  setTimeout(() => document.getElementById('scoreBarFill').style.width = pct+'%', 100);
+  const tbody = document.getElementById('answerTableBody');
+  tbody.innerHTML = '';
+  userAnswers.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    const shortQ = a.question.length > 35 ? a.question.slice(0,35)+'...' : a.question;
+    tr.innerHTML = `<td>${i+1}</td><td>${shortQ}</td><td>${a.chosen}</td><td class="${a.isCorrect?'c':'w'}">${a.isCorrect?'✅':'❌'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---- EXCEL EXPORT ----
+function tryExcel() {
+  try {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('he-IL');
+    const timeStr = now.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
+    const pct = Math.round((score / QUESTIONS.length) * 100);
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Summary
+    const ws1 = XLSX.utils.aoa_to_sheet([
+      ['שם התלמיד/ה','תאריך','שעה','ציון (מתוך 10)','אחוז'],
+      [studentName, dateStr, timeStr, score, pct+'%']
+    ]);
+    ws1['!cols'] = [{wch:20},{wch:14},{wch:10},{wch:16},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'סיכום');
+
+    // Sheet 2: Detailed
+    const rows = userAnswers.map((a,i) => [i+1, a.question, a.chosen, a.correct, a.isCorrect?'נכון ✅':'לא נכון ❌']);
+    const ws2 = XLSX.utils.aoa_to_sheet([['#','שאלה','תשובת התלמיד','תשובה נכונה','תוצאה'], ...rows]);
+    ws2['!cols'] = [{wch:5},{wch:50},{wch:25},{wch:25},{wch:15}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'תשובות מפורטות');
+
+    const filename = `מבחן_יום_העצמאות_${studentName}_${dateStr.replace(/\//g,'-')}.xlsx`;
+    XLSX.writeFile(wb, filename);
+  } catch(e) {
+    alert('⚠️ לא ניתן להוריד קובץ מכאן.\nלחצי על "העתק נתונים (גיבוי)" כדי לקבל את הנתונים.');
+  }
+}
+
+// ---- CSV FALLBACK ----
+function showCsvModal() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('he-IL');
+  const timeStr = now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const pct = Math.round((score/QUESTIONS.length)*100);
+
+  let csv = 'שם התלמיד,תאריך,שעה,ציון,אחוז\n';
+  csv += `${studentName},${dateStr},${timeStr},${score},${pct}%\n\n`;
+  csv += '#,שאלה,תשובת התלמיד,תשובה נכונה,תוצאה\n';
+  userAnswers.forEach((a,i) => {
+    csv += `${i+1},"${a.question}","${a.chosen}","${a.correct}","${a.isCorrect?'נכון':'לא נכון'}"\n`;
+  });
+
+  document.getElementById('csvContent').value = csv;
+  document.getElementById('csvModal').classList.add('show');
+  document.getElementById('copySuccess').style.display = 'none';
+}
+
+function copyCSV() {
+  const ta = document.getElementById('csvContent');
+  ta.select();
+  try {
+    document.execCommand('copy');
+    document.getElementById('copySuccess').style.display = 'block';
+  } catch(e) {
+    navigator.clipboard.writeText(ta.value).then(() => {
+      document.getElementById('copySuccess').style.display = 'block';
+    });
+  }
+}
+
+function closeModal() { document.getElementById('csvModal').classList.remove('show'); }
+
+function restartQuiz() {
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('nameScreen').classList.remove('hidden');
+  document.getElementById('studentName').value = '';
+  document.getElementById('startBtn').disabled = true;
+}
+</script>
+</body>
+</html>
